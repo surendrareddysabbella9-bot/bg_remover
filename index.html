@@ -130,11 +130,13 @@ async function processImage(file) {
   reader.onload = e => { originalImage.src = e.target.result; };
   reader.readAsDataURL(file);
 
+  const formData = new FormData();
+  formData.append('image', file);
+
   try {
-    const arrayBuffer = await file.arrayBuffer();
     const response = await fetch('/.netlify/functions/removeBg', {
       method: 'POST',
-      body: arrayBuffer
+      body: formData
     });
     const data = await response.json();
     if (!data.processedImageUrl) throw new Error('No processed image returned');
@@ -155,6 +157,7 @@ async function processImage(file) {
     console.error(err);
   }
 }
+
 
 let isDragging = false;
 sliderHandle.addEventListener('mousedown', () => isDragging = true);

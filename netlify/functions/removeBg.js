@@ -1,7 +1,6 @@
 import fetch from "node-fetch";
 import Busboy from "busboy";
 import FormData from "form-data";
-import { Blob } from "fetch-blob";
 
 export async function handler(event) {
   return new Promise((resolve) => {
@@ -27,7 +26,7 @@ export async function handler(event) {
 
       try {
         const formData = new FormData();
-        formData.append("image_file", new Blob([fileBuffer]), "image.png");
+        formData.append("image_file", fileBuffer, { filename: "image.png", contentType: "image/png" });
         formData.append("size", "auto");
 
         const response = await fetch("https://api.remove.bg/v1.0/removebg", {
@@ -38,10 +37,7 @@ export async function handler(event) {
 
         if (!response.ok) {
           const errText = await response.text();
-          resolve({
-            statusCode: response.status,
-            body: JSON.stringify({ error: errText || "Failed to remove background" })
-          });
+          resolve({ statusCode: response.status, body: JSON.stringify({ error: errText }) });
           return;
         }
 
