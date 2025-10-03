@@ -15,7 +15,9 @@ export async function handler(event) {
     busboy.on("file", (fieldname, file) => {
       const chunks = [];
       file.on("data", (chunk) => chunks.push(chunk));
-      file.on("end", () => { fileBuffer = Buffer.concat(chunks); });
+      file.on("end", () => {
+        fileBuffer = Buffer.concat(chunks);
+      });
     });
 
     busboy.on("finish", async () => {
@@ -39,7 +41,7 @@ export async function handler(event) {
           const errText = await removeResponse.text();
           resolve({
             statusCode: removeResponse.status,
-            body: JSON.stringify({ error: "Remove.bg failed", details: errText }),
+            body: JSON.stringify({ error: "Remove.bg API failed", details: errText }),
           });
           return;
         }
