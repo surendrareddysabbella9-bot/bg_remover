@@ -3,155 +3,160 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Surendra BG Removal</title>
+  <title>✨ Surendra BG Removal ✨</title>
   <style>
-    /* your same CSS here (unchanged) */
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      color: #333;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+
+    h1 {
+      margin-top: 40px;
+      font-size: 2.2rem;
+      color: #222;
+    }
+
+    p {
+      font-size: 1.1rem;
+      margin-bottom: 20px;
+      color: #555;
+    }
+
+    .upload-box {
+      border: 2px dashed #888;
+      border-radius: 10px;
+      padding: 30px;
+      margin: 20px auto;
+      width: 300px;
+      background: white;
+      transition: 0.3s;
+    }
+
+    .upload-box:hover {
+      border-color: #4CAF50;
+      background: #f0fff0;
+    }
+
+    input[type="file"] {
+      margin-top: 10px;
+      padding: 10px;
+    }
+
+    .btn {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-top: 15px;
+    }
+
+    .btn:hover {
+      background: #45a049;
+    }
+
+    .images {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 30px;
+      margin-top: 30px;
+    }
+
+    .images img {
+      max-width: 250px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .label {
+      font-weight: bold;
+      margin-top: 10px;
+      display: block;
+    }
+
+    .loader {
+      display: none;
+      margin-top: 20px;
+      font-style: italic;
+      color: #666;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>✨ Surendra BG Removal ✨</h1>
-      <p class="subtitle">Remove backgrounds from images instantly with AI</p>
-    </header>
 
-    <div class="upload-section" id="uploadSection">
-      <div class="upload-icon">📸</div>
-      <p class="upload-text">Drag & Drop your image here or click to upload</p>
-      <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
-        Choose Image
-      </button>
-      <input type="file" id="fileInput" accept="image/jpeg,image/png">
+  <h1>✨ Surendra BG Removal ✨</h1>
+  <p>Remove backgrounds from images instantly with AI</p>
+
+  <div class="upload-box" id="drop-area">
+    <p>📸 Drag & Drop your image here or click to upload</p>
+    <input type="file" id="fileInput" accept="image/*">
+  </div>
+
+  <div class="loader" id="loader">⏳ Removing background... Please wait</div>
+
+  <div class="images" id="preview-area" style="display: none;">
+    <div>
+      <span class="label">Original</span>
+      <img id="original-img" src="">
     </div>
-
-    <div class="error" id="errorMsg"></div>
-    <div class="loading" id="loading">
-      <div class="spinner"></div>
-      <p>Removing background... Please wait</p>
-    </div>
-
-    <div class="comparison-container" id="comparisonContainer">
-      <div class="comparison-slider" id="comparisonSlider">
-        <div class="image-container">
-          <img class="original-image" id="originalImage" alt="Original">
-          <img class="processed-image" id="processedImage" alt="Background Removed">
-          <div class="slider-handle" id="sliderHandle">
-            <div class="slider-button">⇔</div>
-          </div>
-          <div class="label label-original">Original</div>
-          <div class="label label-processed">No Background</div>
-        </div>
-      </div>
-      <button class="download-btn" id="downloadBtn">Download Image</button>
+    <div>
+      <span class="label">No Background</span>
+      <img id="processed-img" src="">
+      <br>
+      <button class="btn" id="downloadBtn">⬇ Download Image</button>
     </div>
   </div>
 
   <script>
-    const uploadSection = document.getElementById('uploadSection');
-    const fileInput = document.getElementById('fileInput');
-    const comparisonContainer = document.getElementById('comparisonContainer');
-    const loading = document.getElementById('loading');
-    const errorMsg = document.getElementById('errorMsg');
-    const originalImage = document.getElementById('originalImage');
-    const processedImage = document.getElementById('processedImage');
-    const sliderHandle = document.getElementById('sliderHandle');
-    const comparisonSlider = document.getElementById('comparisonSlider');
-    const downloadBtn = document.getElementById('downloadBtn');
+    const fileInput = document.getElementById("fileInput");
+    const loader = document.getElementById("loader");
+    const previewArea = document.getElementById("preview-area");
+    const originalImg = document.getElementById("original-img");
+    const processedImg = document.getElementById("processed-img");
+    const downloadBtn = document.getElementById("downloadBtn");
 
-    let processedImageData = null;
+    fileInput.addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
 
-    // Drag & drop
-    uploadSection.addEventListener('dragover', e => {
-      e.preventDefault();
-      uploadSection.classList.add('dragover');
-    });
-    uploadSection.addEventListener('dragleave', () => {
-      uploadSection.classList.remove('dragover');
-    });
-    uploadSection.addEventListener('drop', e => {
-      e.preventDefault();
-      uploadSection.classList.remove('dragover');
-      const file = e.dataTransfer.files[0];
-      if (file) processImage(file);
-    });
+      originalImg.src = URL.createObjectURL(file);
+      loader.style.display = "block";
+      previewArea.style.display = "none";
 
-    fileInput.addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (file) processImage(file);
-    });
-
-    // Process Image (via Netlify Function)
-    async function processImage(file) {
-      hideError();
-      loading.style.display = 'block';
-      comparisonContainer.style.display = 'none';
-
-      const reader = new FileReader();
-      reader.onload = e => { originalImage.src = e.target.result; };
-      reader.readAsDataURL(file);
-
+      // Send to Netlify function (instead of exposing API key)
       const formData = new FormData();
-      formData.append('image_file', file);
-      formData.append('size', 'auto');
+      formData.append("image", file);
 
-      try {
-        const response = await fetch('/.netlify/functions/removeBg', {
-          method: 'POST',
-          body: formData,
-        });
+      const response = await fetch("/.netlify/functions/removeBg", {
+        method: "POST",
+        body: formData
+      });
 
-        if (!response.ok) throw new Error(`API Error: ${response.status}`);
+      const data = await response.json();
+      loader.style.display = "none";
 
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        processedImage.src = url;
-        processedImageData = blob;
-
-        loading.style.display = 'none';
-        comparisonContainer.style.display = 'block';
-        downloadBtn.style.display = 'block';
-      } catch (err) {
-        loading.style.display = 'none';
-        showError('Failed to remove background. Please try again.');
-        console.error(err);
-      }
-    }
-
-    // Slider
-    let isDragging = false;
-    sliderHandle.addEventListener('mousedown', () => { isDragging = true; });
-    document.addEventListener('mouseup', () => { isDragging = false; });
-    document.addEventListener('mousemove', e => { if (isDragging) updateSlider(e); });
-    comparisonSlider.addEventListener('click', e => updateSlider(e));
-
-    function updateSlider(e) {
-      const rect = comparisonSlider.getBoundingClientRect();
-      let x = e.clientX - rect.left;
-      x = Math.max(0, Math.min(x, rect.width));
-      const percentage = (x / rect.width) * 100;
-      sliderHandle.style.left = percentage + '%';
-      processedImage.style.clipPath = `inset(0 ${100 - percentage}% 0 0)`;
-    }
-
-    // Download
-    downloadBtn.addEventListener('click', () => {
-      if (processedImageData) {
-        const url = URL.createObjectURL(processedImageData);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'background-removed.png';
-        a.click();
-        URL.revokeObjectURL(url);
+      if (data && data.processedImageUrl) {
+        processedImg.src = data.processedImageUrl;
+        previewArea.style.display = "flex";
+        downloadBtn.onclick = () => {
+          const a = document.createElement("a");
+          a.href = data.processedImageUrl;
+          a.download = "no-bg.png";
+          a.click();
+        };
+      } else {
+        alert("❌ Failed to process image");
       }
     });
-
-    function showError(msg) {
-      errorMsg.textContent = msg;
-      errorMsg.style.display = 'block';
-    }
-    function hideError() {
-      errorMsg.style.display = 'none';
-    }
   </script>
+
 </body>
 </html>
