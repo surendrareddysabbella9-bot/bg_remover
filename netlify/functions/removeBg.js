@@ -1,9 +1,8 @@
 import fetch from "node-fetch";
 import Busboy from "busboy";
-import FormData from "form-data";
 
 export async function handler(event) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     if (event.httpMethod !== "POST") {
       resolve({ statusCode: 405, body: "Method Not Allowed" });
       return;
@@ -27,21 +26,21 @@ export async function handler(event) {
       }
 
       try {
-        const form = new FormData();
-        form.append("image_file", fileBuffer, { filename: "image.png" });
-        form.append("size", "auto");
+        const formData = new FormData();
+        formData.append("image_file", new Blob([fileBuffer]), "image.png");
+        formData.append("size", "auto");
 
         const removeResponse = await fetch("https://api.remove.bg/v1.0/removebg", {
           method: "POST",
           headers: { "X-Api-Key": process.env.REMOVE_BG_KEY },
-          body: form,
+          body: formData,
         });
 
         if (!removeResponse.ok) {
           const errText = await removeResponse.text();
           resolve({
             statusCode: removeResponse.status,
-            body: JSON.stringify({ error: "Remove.bg API failed", details: errText }),
+            body: JSON.stringify({ error: `Remove.bg failed: ${errText}` }),
           });
           return;
         }
@@ -51,11 +50,17 @@ export async function handler(event) {
 
         resolve({
           statusCode: 200,
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
           body: JSON.stringify({ processedImageUrl: `data:image/png;base64,${base64Image}` }),
         });
       } catch (err) {
-        resolve({ statusCode: 500, body: JSON.stringify({ error: err.message }) });
+        resolve({
+          statusCode: 500,
+          body: JSON.stringify({ error: err.message }),
+        });
       }
     });
 
