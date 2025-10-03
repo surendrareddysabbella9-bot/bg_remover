@@ -127,35 +127,36 @@ async function processImage(file) {
   comparisonContainer.style.display = 'none';
 
   const reader = new FileReader();
-  reader.onload = e => { originalImage.src = e.target.result; };
+  reader.onload = async e => {
+    originalImage.src = e.target.result;
+
+    try {
+      const response = await fetch('/.netlify/functions/removeBg', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: e.target.result.split(',')[1] })
+      });
+
+      const data = await response.json();
+      if (!data.processedImageUrl) throw new Error('No processed image returned');
+
+      processedImage.src = data.processedImageUrl;
+      loading.style.display = 'none';
+      comparisonContainer.style.display = 'block';
+      downloadBtn.style.display = 'block';
+      downloadBtn.onclick = () => {
+        const a = document.createElement('a');
+        a.href = data.processedImageUrl;
+        a.download = 'background-removed.png';
+        a.click();
+      };
+    } catch (err) {
+      loading.style.display = 'none';
+      showError('Failed to remove background. Please try again.');
+      console.error(err);
+    }
+  };
   reader.readAsDataURL(file);
-
-  const formData = new FormData();
-  formData.append('image', file);
-
-  try {
-    const response = await fetch('/.netlify/functions/removeBg', {
-      method: 'POST',
-      body: formData
-    });
-    const data = await response.json();
-    if (!data.processedImageUrl) throw new Error('No processed image returned');
-
-    processedImage.src = data.processedImageUrl;
-    loading.style.display = 'none';
-    comparisonContainer.style.display = 'block';
-    downloadBtn.style.display = 'block';
-    downloadBtn.onclick = () => {
-      const a = document.createElement('a');
-      a.href = data.processedImageUrl;
-      a.download = 'background-removed.png';
-      a.click();
-    };
-  } catch (err) {
-    loading.style.display = 'none';
-    showError('Failed to remove background. Please try again.');
-    console.error(err);
-  }
 }
 
 
