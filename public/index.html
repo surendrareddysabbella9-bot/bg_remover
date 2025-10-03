@@ -131,7 +131,7 @@ async function processImage(file) {
     originalImage.src = e.target.result;
 
     try {
-      const response = await fetch('/.netlify/functions/removeBg', {
+      const response = await fetch('/api/removeBg', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageBase64: e.target.result.split(',')[1] })
