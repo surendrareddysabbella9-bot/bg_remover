@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Surendra BG Removal</title>
+  <style>
+    /* your same CSS here (unchanged) */
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>✨ Surendra BG Removal ✨</h1>
+      <p class="subtitle">Remove backgrounds from images instantly with AI</p>
+    </header>
+
+    <div class="upload-section" id="uploadSection">
+      <div class="upload-icon">📸</div>
+      <p class="upload-text">Drag & Drop your image here or click to upload</p>
+      <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+        Choose Image
+      </button>
+      <input type="file" id="fileInput" accept="image/jpeg,image/png">
+    </div>
+
+    <div class="error" id="errorMsg"></div>
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>Removing background... Please wait</p>
+    </div>
+
+    <div class="comparison-container" id="comparisonContainer">
+      <div class="comparison-slider" id="comparisonSlider">
+        <div class="image-container">
+          <img class="original-image" id="originalImage" alt="Original">
+          <img class="processed-image" id="processedImage" alt="Background Removed">
+          <div class="slider-handle" id="sliderHandle">
+            <div class="slider-button">⇔</div>
+          </div>
+          <div class="label label-original">Original</div>
+          <div class="label label-processed">No Background</div>
+        </div>
+      </div>
+      <button class="download-btn" id="downloadBtn">Download Image</button>
+    </div>
+  </div>
+
+  <script>
+    const uploadSection = document.getElementById('uploadSection');
+    const fileInput = document.getElementById('fileInput');
+    const comparisonContainer = document.getElementById('comparisonContainer');
+    const loading = document.getElementById('loading');
+    const errorMsg = document.getElementById('errorMsg');
+    const originalImage = document.getElementById('originalImage');
+    const processedImage = document.getElementById('processedImage');
+    const sliderHandle = document.getElementById('sliderHandle');
+    const comparisonSlider = document.getElementById('comparisonSlider');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    let processedImageData = null;
+
+    // Drag & drop
+    uploadSection.addEventListener('dragover', e => {
+      e.preventDefault();
+      uploadSection.classList.add('dragover');
+    });
+    uploadSection.addEventListener('dragleave', () => {
+      uploadSection.classList.remove('dragover');
+    });
+    uploadSection.addEventListener('drop', e => {
+      e.preventDefault();
+      uploadSection.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) processImage(file);
+    });
+
+    fileInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (file) processImage(file);
+    });
+
+    // Process Image (via Netlify Function)
+    async function processImage(file) {
+      hideError();
+      loading.style.display = 'block';
+      comparisonContainer.style.display = 'none';
+
+      const reader = new FileReader();
+      reader.onload = e => { originalImage.src = e.target.result; };
+      reader.readAsDataURL(file);
+
+      const formData = new FormData();
+      formData.append('image_file', file);
+      formData.append('size', 'auto');
+
+      try {
+        const response = await fetch('/.netlify/functions/removeBg', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) throw new Error(`API Error: ${response.status}`);
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        processedImage.src = url;
+        processedImageData = blob;
+
+        loading.style.display = 'none';
+        comparisonContainer.style.display = 'block';
+        downloadBtn.style.display = 'block';
+      } catch (err) {
+        loading.style.display = 'none';
+        showError('Failed to remove background. Please try again.');
+        console.error(err);
+      }
+    }
+
+    // Slider
+    let isDragging = false;
+    sliderHandle.addEventListener('mousedown', () => { isDragging = true; });
+    document.addEventListener('mouseup', () => { isDragging = false; });
+    document.addEventListener('mousemove', e => { if (isDragging) updateSlider(e); });
+    comparisonSlider.addEventListener('click', e => updateSlider(e));
+
+    function updateSlider(e) {
+      const rect = comparisonSlider.getBoundingClientRect();
+      let x = e.clientX - rect.left;
+      x = Math.max(0, Math.min(x, rect.width));
+      const percentage = (x / rect.width) * 100;
+      sliderHandle.style.left = percentage + '%';
+      processedImage.style.clipPath = `inset(0 ${100 - percentage}% 0 0)`;
+    }
+
+    // Download
+    downloadBtn.addEventListener('click', () => {
+      if (processedImageData) {
+        const url = URL.createObjectURL(processedImageData);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'background-removed.png';
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    });
+
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.style.display = 'block';
+    }
+    function hideError() {
+      errorMsg.style.display = 'none';
+    }
+  </script>
+</body>
+</html>
