@@ -8,10 +8,8 @@
     "build": "echo 'No build step needed for static HTML'"
   },
   "dependencies": {
-    "busboy": "^1.6.0",
     "node-fetch": "^3.3.2",
     "form-data": "^4.0.0",
-    "fetch-blob": "^3.2.0"
   },
   "engines": {
     "node": ">=18"

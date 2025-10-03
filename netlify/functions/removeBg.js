@@ -2,15 +2,14 @@ import fetch from "node-fetch";
 import FormData from "form-data";
 
 export async function handler(event) {
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method Not Allowed" };
-  }
+  if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
 
   try {
     const { imageBase64 } = JSON.parse(event.body);
     if (!imageBase64) throw new Error("No image provided");
 
     const buffer = Buffer.from(imageBase64, "base64");
+
     const formData = new FormData();
     formData.append("image_file", buffer, "image.png");
     formData.append("size", "auto");
