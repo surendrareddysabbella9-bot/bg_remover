@@ -1,0 +1,28 @@
+# Node dependencies
+node_modules/
+
+# Netlify Functions local cache
+.netlify/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment variables (keep your API keys safe!)
+.env
+.env.local
+.env.*.local
+
+# Build artifacts
+dist/
+build/
+
+# Optional: IDE/editor specific
+.vscode/
+.idea/
