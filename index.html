@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Surendra BG Removal</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 20px; padding: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    header { text-align: center; margin-bottom: 40px; }
+    h1 { font-size: 2.5em; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .subtitle { color: #666; font-size: 1.1em; }
+    .upload-section { background: linear-gradient(135deg, #e0e7ff 0%, #e9d5ff 100%); border: 3px dashed #667eea; border-radius: 15px; padding: 60px 20px; text-align: center; cursor: pointer; margin-bottom: 40px; transition: all 0.3s ease; }
+    .upload-section:hover { background: linear-gradient(135deg, #c7d2fe 0%, #ddd6fe 100%); transform: translateY(-2px); }
+    .upload-section.dragover { background: linear-gradient(135deg, #a5b4fc 0%, #c4b5fd 100%); border-color: #764ba2; }
+    .upload-icon { font-size: 4em; margin-bottom: 20px; }
+    .upload-text { font-size: 1.2em; color: #4c1d95; margin-bottom: 20px; }
+    .upload-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 15px 40px; font-size: 1.1em; border-radius: 30px; cursor: pointer; }
+    #fileInput { display: none; }
+    .comparison-container { display: none; margin: 40px 0; max-width: 800px; margin-left: auto; margin-right: auto; }
+    .comparison-slider { position: relative; width: 100%; overflow: hidden; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+    .image-container { position: relative; width: 100%; height: 500px; }
+    .original-image, .processed-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; background: #f3f4f6; }
+    .processed-image { clip-path: inset(0 50% 0 0); }
+    .slider-handle { position: absolute; top: 0; left: 50%; width: 4px; height: 100%; background: white; cursor: ew-resize; transform: translateX(-50%); z-index: 10; }
+    .slider-button { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px; background: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.5em; color: #667eea; }
+    .label { position: absolute; top: 20px; background: rgba(0,0,0,0.7); color: white; padding: 8px 16px; border-radius: 20px; font-size: 0.9em; font-weight: 600; }
+    .label-original { left: 20px; }
+    .label-processed { right: 20px; }
+    .download-btn { display: none; background: linear-gradient(135deg,#10b981 0%,#059669 100%); color:white; border:none; padding:15px 40px; font-size:1.1em; border-radius:30px; cursor:pointer; margin:20px auto; display:block; }
+    .sample-section { margin-top: 60px; }
+    .sample-section h2 { text-align:center; color:#4c1d95; margin-bottom:30px; font-size:2em; }
+    .sample-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:30px; }
+    .sample-card { background: linear-gradient(135deg,#e0e7ff 0%,#e9d5ff 100%); border-radius:15px; overflow:hidden; cursor:pointer; transition: transform 0.3s ease; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+    .sample-card:hover { transform: translateY(-5px); box-shadow:0 10px 25px rgba(0,0,0,0.2); }
+    .sample-card img { width:100%; height:200px; object-fit:cover; }
+    .sample-card p { padding:15px; text-align:center; color:#4c1d95; font-weight:600; }
+    .loading { display:none; text-align:center; padding:40px; }
+    .spinner { border:4px solid #e0e7ff; border-top:4px solid #667eea; border-radius:50%; width:50px; height:50px; animation: spin 1s linear infinite; margin:0 auto 20px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .error { display:none; background:#fee2e2; color:#991b1b; padding:15px; border-radius:10px; margin:20px 0; text-align:center; }
+    @media (max-width:768px) { .container { padding:20px; } h1 { font-size:2em; } .image-container { height:300px; } }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>✨ Surendra BG Removal ✨</h1>
+    <p class="subtitle">Remove backgrounds from images instantly with AI</p>
+  </header>
+
+  <div class="upload-section" id="uploadSection">
+    <div class="upload-icon">📸</div>
+    <p class="upload-text">Drag & Drop your image here or click to upload</p>
+    <button class="upload-btn" onclick="fileInput.click()">Choose Image</button>
+    <input type="file" id="fileInput" accept="image/jpeg,image/png">
+  </div>
+
+  <div class="error" id="errorMsg"></div>
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>Removing background... Please wait</p>
+  </div>
+
+  <div class="comparison-container" id="comparisonContainer">
+    <div class="comparison-slider" id="comparisonSlider">
+      <div class="image-container">
+        <img class="original-image" id="originalImage" alt="Original">
+        <img class="processed-image" id="processedImage" alt="Background Removed">
+        <div class="slider-handle" id="sliderHandle">
+          <div class="slider-button">⇔</div>
+        </div>
+        <div class="label label-original">Original</div>
+        <div class="label label-processed">No Background</div>
+      </div>
+    </div>
+    <button class="download-btn" id="downloadBtn">Download Image</button>
+  </div>
+
+  <div class="sample-section">
+    <h2>Try Sample Images</h2>
+    <div class="sample-grid">
+      <div class="sample-card" onclick="loadSample(1)">
+        <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400" alt="Sample 1">
+        <p>Sneaker Product</p>
+      </div>
+      <div class="sample-card" onclick="loadSample(2)">
+        <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400" alt="Sample 2">
+        <p>Headphones</p>
+      </div>
+      <div class="sample-card" onclick="loadSample(3)">
+        <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400" alt="Sample 3">
+        <p>Watch Product</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const uploadSection = document.getElementById('uploadSection');
+const fileInput = document.getElementById('fileInput');
+const comparisonContainer = document.getElementById('comparisonContainer');
+const loading = document.getElementById('loading');
+const errorMsg = document.getElementById('errorMsg');
+const originalImage = document.getElementById('originalImage');
+const processedImage = document.getElementById('processedImage');
+const sliderHandle = document.getElementById('sliderHandle');
+const comparisonSlider = document.getElementById('comparisonSlider');
+const downloadBtn = document.getElementById('downloadBtn');
+
+uploadSection.addEventListener('dragover', e => { e.preventDefault(); uploadSection.classList.add('dragover'); });
+uploadSection.addEventListener('dragleave', () => { uploadSection.classList.remove('dragover'); });
+uploadSection.addEventListener('drop', e => { 
+  e.preventDefault(); 
+  uploadSection.classList.remove('dragover'); 
+  const file = e.dataTransfer.files[0]; 
+  if (file && (file.type === 'image/jpeg' || file.type === 'image/png')) processImage(file);
+  else showError('Please upload a JPEG or PNG image'); 
+});
+
+fileInput.addEventListener('change', e => { const file = e.target.files[0]; if(file) processImage(file); });
+
+async function processImage(file) {
+  hideError();
+  loading.style.display = 'block';
+  comparisonContainer.style.display = 'none';
+
+  const reader = new FileReader();
+  reader.onload = async e => {
+    originalImage.src = e.target.result;
+
+    try {
+      const response = await fetch('/api/removeBg', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: e.target.result.split(',')[1] })
+      });
+
+      const data = await response.json();
+      if (!data.processedImageUrl) throw new Error('No processed image returned');
+
+      processedImage.src = data.processedImageUrl;
+      loading.style.display = 'none';
+      comparisonContainer.style.display = 'block';
+      downloadBtn.style.display = 'block';
+      downloadBtn.onclick = () => {
+        const a = document.createElement('a');
+        a.href = data.processedImageUrl;
+        a.download = 'background-removed.png';
+        a.click();
+      };
+    } catch (err) {
+      loading.style.display = 'none';
+      showError('Failed to remove background. Please try again.');
+      console.error(err);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+
+let isDragging = false;
+sliderHandle.addEventListener('mousedown', () => isDragging = true);
+document.addEventListener('mouseup', () => isDragging = false);
+document.addEventListener('mousemove', e => { if(isDragging) updateSlider(e); });
+comparisonSlider.addEventListener('click', e => updateSlider(e));
+sliderHandle.addEventListener('touchstart', () => isDragging = true);
+document.addEventListener('touchend', () => isDragging = false);
+document.addEventListener('touchmove', e => { if(isDragging) updateSlider(e.touches[0]); });
+
+function updateSlider(e) {
+  const rect = comparisonSlider.getBoundingClientRect();
+  let x = e.clientX - rect.left;
+  x = Math.max(0, Math.min(x, rect.width));
+  const percentage = (x / rect.width) * 100;
+  sliderHandle.style.left = percentage + '%';
+  processedImage.style.clipPath = `inset(0 ${100 - percentage}% 0 0)`;
+}
+
+async function loadSample(num) {
+  const sampleUrls = [
+    'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800',
+    'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800',
+    'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800'
+  ];
+  const url = sampleUrls[num-1];
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    processImage(new File([blob], 'sample.jpg', { type: 'image/jpeg' }));
+  } catch {
+    showError('Failed to load sample image');
+  }
+}
+
+function showError(msg) { errorMsg.textContent = msg; errorMsg.style.display = 'block'; }
+function hideError() { errorMsg.style.display = 'none'; }
+</script>
+</body>
+</html>
